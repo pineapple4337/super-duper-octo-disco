@@ -4,6 +4,6 @@ import { getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged } from "h
 import { firebaseConfig } from "./config.js";
 const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
 const esc=(s="")=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-let qs=[],vs=[];function render(){let c={};vs.forEach(v=>c[v.questionId]=(c[v.questionId]||0)+1);let a=[...qs].sort((x,y)=>(c[y.id]||0)-(c[x.id]||0));list.innerHTML=a.map(x=>`<div class="card question">${esc(x.text)}<p class="muted">👍 ${c[x.id]||0}</p></div>`).join("")||'<p class="muted">No approved questions yet.</p>';}
+let qs=[],vs=[];function render(){let c={};vs.forEach(v=>c[v.questionId]=(c[v.questionId]||0)+1);let a=[...qs].sort((x,y)=>(x.answered===y.answered?((c[y.id]||0)-(c[x.id]||0)):(x.answered?1:-1)));list.innerHTML=a.map(x=>`<div class="card question ${x.answered?'answered':''}">${esc(x.text)}<p class="muted">👍 ${c[x.id]||0} ${x.answered?' · ✓ Answered':''}</p></div>`).join("")||'<p class="muted">No approved questions yet.</p>';}
 onSnapshot(query(collection(db,"questions"),where("status","==","approved")),s=>{qs=s.docs.map(d=>({id:d.id,...d.data()}));render();},console.error);onSnapshot(collection(db,"votes"),s=>{vs=s.docs.map(d=>d.data());render();},console.error);
 </script></body></html>
