@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Q&A</title><link rel="stylesheet" href="style.css"></head><body><main class="wrap public"><h1>Live Q&A</h1><p class="muted">Approved questions</p><div id="list"></div></main><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { firebaseConfig } from "./config.js";
+const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
+const esc=(s="")=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+const qq=query(collection(db,"questions"),where("status","==","approved"),orderBy("createdAt","asc"));
+onSnapshot(qq,snap=>{list.innerHTML=snap.docs.map(d=>`<div class="card question">${esc(d.data().text)}</div>`).join("")||'<p class="muted">No approved questions yet.</p>'; },console.error);
+</script></body></html>

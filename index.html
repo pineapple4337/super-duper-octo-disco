@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ask a Question</title><link rel="stylesheet" href="style.css"></head><body><main class="wrap"><h1>Live Q&A</h1><p class="muted">Submit a question. A moderator will review it before it appears publicly.</p><div class="card"><form id="f"><textarea id="q" maxlength="300" required placeholder="Type your question…"></textarea><p class="muted"><span id="n">0</span>/300</p><button class="primary">Submit</button><div id="s" class="status"></div></form></div></main><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { firebaseConfig } from "./config.js";
+const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
+const esc=(s="")=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+q.oninput=()=>n.textContent=q.value.length;
+f.onsubmit=async e=>{e.preventDefault();const text=q.value.trim();if(!text)return;s.textContent="Submitting…";try{await addDoc(collection(db,"questions"),{text,status:"pending",createdAt:serverTimestamp()});q.value="";n.textContent="0";s.textContent="Submitted — thank you!";}catch(err){console.error(err);s.textContent="Could not submit.";}};
+</script></body></html>

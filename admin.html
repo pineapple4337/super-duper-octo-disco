@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moderator</title><link rel="stylesheet" href="style.css"></head><body><main class="wrap"><h1>Moderator</h1><div id="login" class="card"><form id="lf"><input id="email" type="email" required placeholder="Moderator email"><br><br><input id="pw" type="password" required placeholder="Password"><br><br><button class="primary">Sign in</button><div id="ls" class="status"></div></form></div><section id="panel" hidden><div class="row"><h2 style="flex:1">Pending</h2><button id="out">Sign out</button></div><div id="list"></div></section></main><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { firebaseConfig } from "./config.js";
+const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
+const esc=(s="")=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+let unsub=null;
+function watch(){if(unsub)unsub();const qq=query(collection(db,"questions"),where("status","==","pending"),orderBy("createdAt","asc"));unsub=onSnapshot(qq,snap=>{list.innerHTML=snap.docs.map(d=>`<div class="card" data-id="${d.id}"><div class="question">${esc(d.data().text)}</div><br><div class="row"><button class="approve" data-status="approved">Approve</button><button class="reject" data-status="rejected">Reject</button></div></div>`).join("")||'<p class="muted">Nothing waiting.</p>'; },console.error);}
+lf.onsubmit=async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,email.value,pw.value);ls.textContent="";}catch(err){ls.textContent=err.message;}};
+out.onclick=()=>signOut(auth);
+list.onclick=async e=>{const b=e.target.closest("[data-status]");if(!b)return;await updateDoc(doc(db,"questions",b.closest("[data-id]").dataset.id),{status:b.dataset.status});};
+onAuthStateChanged(auth,user=>{login.hidden=!!user;panel.hidden=!user;if(user)watch();else if(unsub){unsub();unsub=null;}});
+</script></body></html>
