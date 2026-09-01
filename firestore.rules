@@ -1,23 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    match /questions/{id} {
-      allow create: if request.auth == null
-        && request.resource.data.keys().hasOnly(['text','status','createdAt'])
-        && request.resource.data.status == 'pending'
-        && request.resource.data.text is string
-        && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 300;
-
-      // Public users may read approved documents. Signed-in moderator may read all.
-      allow read: if resource.data.status == 'approved' || request.auth != null;
-
-      // For this small private-admin app, only signed-in accounts may moderate.
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status in ['pending','approved','rejected'];
-
-      allow delete: if false;
-    }
+ match /databases/{database}/documents {
+  match /questions/{id} {
+   allow create: if request.resource.data.status == 'pending'
+    && request.resource.data.text is string
+    && request.resource.data.text.size() > 0
+    && request.resource.data.text.size() <= 300;
+   allow read: if resource.data.status == 'approved' || request.auth != null;
+   allow update: if request.auth != null
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+    && request.resource.data.status in ['pending','approved','rejected'];
+   allow delete: if false;
   }
+  match /votes/{voteId} {
+   allow read: if true;
+   allow create: if request.resource.data.keys().hasOnly(['questionId','voterId','createdAt'])
+    && request.resource.data.questionId is string
+    && request.resource.data.voterId is string
+    && voteId == request.resource.data.questionId + "_" + request.resource.data.voterId
+    && exists(/databases/$(database)/documents/questions/$(request.resource.data.questionId))
+    && get(/databases/$(database)/documents/questions/$(request.resource.data.questionId)).data.status == 'approved';
+   allow update: if false;
+   allow delete: if true;
+  }
+ }
 }

@@ -1,11 +1,14 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ask a Question</title><link rel="stylesheet" href="style.css"></head><body><main class="wrap"><h1>Live Q&A</h1><p class="muted">Submit a question. A moderator will review it before it appears publicly.</p><div class="card"><form id="f"><textarea id="q" maxlength="300" required placeholder="Type your question…"></textarea><p class="muted"><span id="n">0</span>/300</p><button class="primary">Submit</button><div id="s" class="status"></div></form></div></main><script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Q&A</title><link rel="stylesheet" href="style.css"></head><body><main class="wrap"><h1>Live Q&A</h1><p class="muted">Ask a question and upvote approved questions.</p><div class="card"><form id="f"><textarea id="q" maxlength="300" required placeholder="Type your question…"></textarea><p class="muted"><span id="n">0</span>/300</p><button class="primary">Submit</button><div id="s" class="status"></div></form></div><h2>Approved questions</h2><div id="approved"></div></main><script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getFirestore,collection,addDoc,serverTimestamp,query,where,orderBy,onSnapshot,doc,updateDoc,setDoc,deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import { firebaseConfig } from "./config.js";
-const app=initializeApp(firebaseConfig); const db=getFirestore(app); const auth=getAuth(app);
+const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
 const esc=(s="")=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-
+let qs=[],vs=new Map(),voterId=localStorage.getItem("qnaVoterId");if(!voterId){voterId=crypto.randomUUID();localStorage.setItem("qnaVoterId",voterId);}
 q.oninput=()=>n.textContent=q.value.length;
-f.onsubmit=async e=>{e.preventDefault();const text=q.value.trim();if(!text)return;s.textContent="Submitting…";try{await addDoc(collection(db,"questions"),{text,status:"pending",createdAt:serverTimestamp()});q.value="";n.textContent="0";s.textContent="Submitted — thank you!";}catch(err){console.error(err);s.textContent="Could not submit.";}};
+f.onsubmit=async e=>{e.preventDefault();let text=q.value.trim();if(!text)return;s.textContent="Submitting…";try{await addDoc(collection(db,"questions"),{text,status:"pending",createdAt:serverTimestamp()});q.value="";n.textContent=0;s.textContent="Submitted — awaiting moderation.";}catch(x){console.error(x);s.textContent="Could not submit.";}};
+function render(){let counts={},mine=new Set();for(const [id,v] of vs){counts[v.questionId]=(counts[v.questionId]||0)+1;if(v.voterId===voterId)mine.add(v.questionId);}let sorted=[...qs].sort((a,b)=>(counts[b.id]||0)-(counts[a.id]||0));approved.innerHTML=sorted.map(x=>`<div class="card"><div class="question">${esc(x.text)}</div><br><button data-vote="${x.id}" class="${mine.has(x.id)?'primary':''}">👍 ${counts[x.id]||0}${mine.has(x.id)?' · Voted':''}</button></div>`).join("")||'<p class="muted">No approved questions yet.</p>';}
+onSnapshot(query(collection(db,"questions"),where("status","==","approved")),s=>{qs=s.docs.map(d=>({id:d.id,...d.data()}));render();},console.error);
+onSnapshot(collection(db,"votes"),s=>{vs=new Map(s.docs.map(d=>[d.id,d.data()]));render();},console.error);
+approved.onclick=async e=>{let b=e.target.closest("[data-vote]");if(!b)return;let qid=b.dataset.vote,id=qid+"_"+voterId,r=doc(db,"votes",id);if(vs.has(id))await deleteDoc(r);else await setDoc(r,{questionId:qid,voterId,createdAt:serverTimestamp()});};
 </script></body></html>
